@@ -1,0 +1,239 @@
+Protobuf-First APIs: gRPC & Co.
+Sept 18, 2019
+
+Evgeny Khabarov
+Bold Commerce, Winnipeg, Canada
+
+
+* $ whoami
+- Evgeny Khabarov
+- Senior Golang developer @ Bold Commerce
+- [[https://twitter.com/eekhabarov][@eekhabarov]] on Twitter
+- [[https://github.com/ekhabarov][@ekhabarov]] on Github/Gophers Slack
+
+* Gophers Slack
+- [[https://gophers.slack.com/][https://gophers.slack.com/]] => *#Winnipeg* channel.
+- [[https://invite.slack.golangbridge.org][https://invite.slack.golangbridge.org/]] - invites.
+- [[https://twitter.com/golangwpg][@golangwpg]] on Twitter
+
+* What is this talk about?
+- How to use protobuf for building gRPC and REST APIs.
+- How to save your own Time.
+
+* Agenda
+- Briefly about Bold Commerce
+- How we're building APIs
+- gRPC & Protobuf
+- gRPC-Gateway and other plugins
+
+* Who we are and what we're doing?
+- Bold Commerce, Winnipeg, Canada.
+- Building apps for e-commerce platforms Shopify and BigCommerce.
+- At the moment we have 20+ apps, written mostly in PHP.
+.image img/logo.png
+
+* Everything was fine...
+- Apps use platform directly.
+- All integrations with Shopify were made on app own way.
+- Different apps work with different object.
+.image img/shopify_php.png
+
+* ...before integration with second platform
+.image img/shopify_bc_php.png
+
+* Issues we've faced
+- A lot of integration work spread across apps.
+- A lot of duplicated work.
+- Inconsistency: different apps need different parts of product objects.
+
+* Platform API
+.image img/platform_api.png
+
+: This API is completely written in Go.
+
+* Platform API version 1
+
+* What's inside?
+- Microservice architecture with API Gateway.
+- gRPC endpoints for interservice communication.
+- HTTP endpoints for PHP apps.
+- go-kit
+.image img/platform_api_internals.png
+
+
+* go-kit
+- [[https://gokit.io]]
+- Collection of packages that help you build microservices.
+- Supports different transports: HTTP, gRPC, Thrift, and net/rpc.
+- Mutli-layered structure.
+.image img/go_kit_layers.png
+
+: All APIs were built with go-kit.
+
+* HTTP endpoint with standard lib.
+.code samples/stdlib_http.go /^func main/,/^}
+
+* go-kit endpoint.
+
+.code samples/gokit_example2.go /^type printRequest/,/^}\n\ntype printResponse/,/^}*func makePrintEndpoint/,/^}*func decodePrintRequest/,/^}
+
+* go-kit endpoint (cont.)
+
+.code samples/gokit_example2.go /^func encodeResponse/,/^}*func main/,/^}
+
+
+* Why it's not suitable for us?
+- Too flexible.
+- Too verbose.
+- In order to add one HTTP handler it's necessary change a lot of code.
+- Encoders, decoders and endpoints are mostly copy-pasted.
+
+* Issue # 1
+- Development speed.
+- Error-prone approach.
+- gRPC/HTTP
+
+: Change a lot of code leads to decreasing dev speed.
+: The more code we have to change, the more errors we could make. Do not forger about support this code.
+
+* Apps...
+.image img/diff-apps.png
+
+: I've mentions that our apps mostly written in PHP, but also we have a Go, Ruby, JS and PHP apps.
+: Teams ask us about clients for our API.
+
+* Issue # 2
+.image img/aragorn.png 500 800
+
+* Issue # 2: causes
+- Clients quickly become outdated.
+- API changes are multiplied by number of clients.
+- In most cases, when I change an API I don't think about clients, and just forgot update them.
+
+
+* gRPC
+
+* What is gRPC?
+- A high performance, open-source universal RPC framework.
+- Platform and language independent.
+- Uses Protocol buffers (*protobuf*) for service definition.
+- [[https://grpc.io][grpc.io]]
+.image img/grpc.png
+
+: 1: It uses binary serialization.
+: 2: You can write your server in Go, and client in PHP, Java, C++
+: 3: Protobuf allows you to have clear service interface.
+
+* Protocol buffers (protobuf)
+- Protocol buffers are Google's language-neutral, platform-neutral, extensible mechanism for serializing structured data – think XML, but smaller, faster, and simpler.
+.link https://developers.google.com/protocol-buffers
+
+
+* Service described with protobuf
+.code samples/example.proto
+
+* Protobuf compiler (protoc)
+- Takes *.proto* files and generates classes and structures for serializing data.
+- Extendable with plugins.
+.image img/protoc.png
+
+* protoc command & plugins
+- Without plugins protoc is able to generate c++ code only. Other languages are supported by plugins.
+- Plugin is a binary with a name *protoc-gen-<plugin_name>*.
+- Plugin should be available in $PATH
+
+.code samples/plugin_list.sh
+
+.code samples/protoc_cmd_format.sh
+
+
+* Plugins for Golang
+.image img/gen-go.png 550 500
+
+* Run protoc
+.code samples/protoc_cmd.sh
+
+* Generated code: service.pb.go
+.code samples/example.pb.go  /^package /,/^$
+.code samples/example.pb.go  /^type GreeterServer/,/^}
+.code samples/example.pb.go  /^type GreeterClient/,/^}
+.code samples/example.pb.go  /^type HelloRequest/,/^}
+.code samples/example.pb.go  /^type HelloResponse/,/^}
+- It also contains a bunch of code for serialization.
+
+* Implementation
+.code samples/implementation.go /^type server/,/^}*func main/,/^}
+
+
+* OK, how about REST API?
+
+* It's here
+.code samples/protoc_cmd_gateway.sh
+.code samples/router.yaml
+- Run protoc again.
+- service.pb.gw.go will be generated.
+
+
+* Generated code: service.pb.gw.go
+- Contains HTTP reverse proxy.
+- Calls gRPC service directly underthehood.
+
+* Change main.go a bit
+.code samples/implementation_gateway.go /^func main/,/^}
+
+
+* grpc-gateway
+It's a *plugin* of the Google protocol buffers compiler protoc. It reads protobuf service
+definitions and *generates* a reverse-proxy server which translates a RESTful HTTP API into gRPC.
+.image img/grpc_gateway.png
+
+.link https://github.com/grpc-ecosystem/grpc-gateway
+
+
+* The Idea
+.image img/the_idea_2.png
+
+* Swagger
+- Machine-readable REST API definition in JSON or YAML format.
+
+* How to get Swagger definition?
+- User one more protoc plugin.
+.code samples/protoc_cmd_swagger.sh
+
+* swagger.json
+.code samples/example.swagger.json
+
+* Build PHP client
+.code samples/codegen.sh
+- Add this command to CI and forgot about it.
+
+* API clients & documentation
+.image img/swagger_client.png 200 400
+.image img/swagger_docs.png 170 600
+
+.link https://github.com/swagger-api/swagger-codegen
+.link https://github.com/Mermade/widdershins
+
+
+* Pros & Cons
+*Pros*:
+
+- Declarative development.
+- Fast implementation, when you have appropriate toolset.
+- Less code.
+- All-in-one: API, docs, clients.
+- Extendable with plugins.
+
+*Cons*:
+
+- gRPC is hard to debug in compare with REST.
+- Generated code is hard to fix.
+- Toolset: different versions.
+- Toolset: different plugins which do almost same: go, gogo, gogofast, gogofaster.
+
+* Questions?
+.image img/questions.png
+- [[https://twitter.com/eekhabarov][@eekhabarov]] on Twitter
+- [[https://github.com/ekhabarov][@ekhabarov]] on Github/GopherSlack
+
+

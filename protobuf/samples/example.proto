@@ -1,0 +1,21 @@
+// service.proto
+syntax = "proto3";
+
+package svc.greeter;
+option go_package = "pb";
+
+import "protobuf/gogoproto/gogo.proto";
+import "google/protobuf/timestamp.proto";
+
+service Greeter {
+  rpc SayHello (HelloRequest) returns (HelloResponse);
+}
+
+message HelloRequest {
+  string name = 1;
+}
+
+message HelloResponse {
+  string message = 1;
+  google.protobuf.Timestamp response_time = 2 [(gogoproto.stdtime) = true];
+}

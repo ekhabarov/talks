@@ -1,0 +1,24 @@
+option go_package = "pb";
+
+import "options/annotations.proto"; // adds an ability to use options // HL
+
+option (transformer.go_repo_package) = "logic"; // package with business_logic structures // HL
+option (transformer.go_protobuf_package) = "pb"; // package with protobuf structures // HL
+option (transformer.go_models_file_path) = "business_logic.go"; // path to business_logic source // HL
+
+message Order {
+  option (transformer.go_struct) = "MyOrder"; // structure name in business_logic package // HL
+
+  int64 id = 1;
+  string number = 2;
+  string status = 3;
+}
+message Request {
+  int64 id = 1;
+}
+message Response {
+  Order order = 1;
+}
+service Order{
+  rpc Get (Request) returns (Response);
+}

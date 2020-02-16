@@ -1,0 +1,19 @@
+option go_package = "pb";
+
+message Order {
+  int64 id = 1;
+  string number = 2;
+  string status = 3;
+}
+
+message Request {
+  int64 id = 1;
+}
+
+message Response {
+  Order order = 1;
+}
+
+service Order{
+  rpc Get (Request) returns (Response);
+}

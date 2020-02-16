@@ -1,0 +1,8 @@
+# router.yaml
+type: google.api.Service
+config_version: 3
+
+http:
+  rules:
+    - selector: svc.greeter.Greeter.SayHello
+      get: /hello/{name}

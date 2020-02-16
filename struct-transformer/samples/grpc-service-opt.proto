@@ -1,0 +1,23 @@
+option go_package = "pb";
+
+import "options/annotations.proto"; // 1 // HL
+option (transformer.go_repo_package) = "models"; // 2 // HL
+option (transformer.go_protobuf_package) = "pb"; // 3 // HL
+option (transformer.go_models_file_path) = "path/to/models.go"; // 4 // HL
+
+message Order {
+  option (transformer.go_struct) = "MyOrder"; // 5 // HL
+
+  int64 id = 1;
+  string number = 2;
+  string status = 3;
+}
+message Req {
+  int64 id = 1;
+}
+message Resp {
+  Order order = 1;
+}
+service Order{
+  rpc Get (Req) returns (Resp);
+}

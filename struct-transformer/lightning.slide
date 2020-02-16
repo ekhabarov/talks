@@ -1,0 +1,112 @@
+protoc-gen-struct-transformer
+Bridge between auto-generated gRPC structures and structures in your code.
+
+Evgeny Khabarov
+Bold Commerce, Winnipeg, Canada
+@eekhabarov
+
+* Example app
+.image img/app.png 200 1000
+: We have an example app
+: Our app talks to database and exposes one gRPC endpoint with one method - 1:1
+
+* Two parts of the app
+.image img/two_sides.png
+
+: App consists of TWO part
+: gRPC side has:
+: - service definition in protobuf, service.proto file
+: - auto-generated Golang structures and interfaces, service.pb.go
+
+: business logic:
+: - TAKES data from database, does something with it and exposes interface, logic.go file
+: - does KNOW NOTHING about transport level and has not idea how this data will be transferred to client
+
+: This way we have CLEAR SEPARATION between business logic and transport
+
+* gRPC part
+.code samples/service.proto.pb.go
+.code samples/protoc-2.sh
+
+: - Let's look inside the code
+: - On the LEFT side we have protobuf definition which will be generated into code on the RIGHT side
+: - With the command in the bottom of the slide
+: --------------------
+: - In protobuf file there are 3 messages: Order, Request and Response which includes order
+: - And gRPC service with one GET method, which returns Order by ID
+: --------------------
+: - On the RIGHT side we have auto-generated Go code.
+: - Message became structures, Service became interface
+
+* logic.go
+.code samples/logic.go
+
+: business logic
+: - Has a MyOrder struct, similar to Order message, but with slightly different type for ID field
+: - An interface with one GET method, which takes an ID and returns MyOrder.
+: - What is the actual implementation of this service is never mind, we have an interface.
+
+* Link between the parts
+.code samples/link.go
+
+: - Let's combine all together under gRPC server implementation.
+: - Implementation is a link between transport level and business logic.
+: - GET method is an implementation of OrderServer interface from service.pb.go
+: --------------------
+: 1. Call OrderService.GetOrder and pass there ID from request.
+: 2. Get order of MyOrder type.
+: 3. To return this order through gRPC endpoint, we have to transform order of MyOrder type into Order of pb.Order type.
+: 4. Also we have to cast some INT types, like int to int64 and vice versa.
+: - Because protobuf has no __int__ type, it has int64 or int32
+
+* Functions
+.code samples/manual-transform.go
+
+* But why we need it?
+- pb.Order != business_logic.MyOrder
+- Transforming one structure into another has to be done *field*by*field*, unless both structures have *identical* underlying types
+- Sometimes we have ***pb.Order* or *[]pb.Order* or even *[]**pb.Order*, rather than just *pb.Order*
+
+* What if...
+.code samples/real-order.go /^type /,/^}
+.caption Who wants to write transformations for such structures manually?
+
+: what if MyRealOrder:
+: - really big
+: - have different field types
+: - includes another structures
+
+* Better way
+
+* One more plugin: step #1
+.code samples/service-with-opts.proto
+
+: Import annotations file to be able to use options.
+: - 1st option contains package name with business logic structures.
+: - 2nd option is a package name with auto-generated proto structures.
+: - 3rd one is a path to source file which business logic structures.
+: - For Order message we have to add an options with name of structutre from business logic source file
+
+* One more plugin: step #2
+.code samples/protoc.sh
+
+: For the protobuf compiler we will add one more parameter which wil call our plugin.
+
+* Result
+.code samples/result-2.go
+
+: As a result we will get additional file with set of structures which convert protobuf structures into business logic structures. -
+: - Now we are able to convert values to values, values to pointers, pointers to values and so on.
+
+* One more plugin: step #3
+.code samples/link-with-transform.proto.go
+
+: And as a 3rd step let's use our functions in gRPC implementation.
+
+* Questions?
+.image img/questions.png
+
+* Try it!
+.link https://github.com/bold-commerce/protoc-gen-struct-transformer
+.image img/qr.png 400 400
+.caption Feel free to open a PR

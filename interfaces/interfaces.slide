@@ -1,0 +1,331 @@
+Interfaces in Go.
+4 Dec 2019
+
+Evgeny Khabarov
+Senior Golang developer, Bold Commerce
+@eekhabarov
+
+* Agenda
+- 54 slides
+- 2 pictures
+- a lot of examples
+
+* What is an interface?
+
+* Quotes
+
+.link https://en.wikipedia.org/wiki/Interface_(computing) Interface_(computing)
+
+  "In computing, an interface is a shared *boundary* across which two or more
+  separate components of a computer system exchange information." (c)
+
+.link https://en.wikipedia.org/wiki/Duck_typing Duck_typing
+
+  "If it walks like a duck and it quacks like a duck, then it must be a duck." (c)
+: Perfectly desribes interface in Go
+
+.link https://golang.org/doc/effective_go.html#interfaces_and_types Effective Go
+
+  "Interfaces in Go provide a way to specify the *behavior* of an object: if
+  something can do *this*, then it can be used *here*." (c)
+
+* In other words...
+- Interface is a fixed sets of methods.
+- When I use an interface in Go I expect certain *behavior*.
+
+* Interfaces in other languages
+
+* Java
+interface:
+.code samples/interface.java
+
+implementation:
+.code samples/implementation.java
+
+- Interface can contain constants
+- Interface should be implemented *explicitly*
+
+* PHP
+interface:
+.code samples/interface.php
+
+implementation:
+.code samples/implementation.php
+
+- Interface can contain constants
+- Interface should be implemented *explicitly*
+
+* Interfaces in Go
+interface:
+.code samples/interface.go
+
+implementation:
+.code samples/implementation.go
+
+- Interface cannot contain constants
+- Interface can be implemented *implicitly*, i.e. there is no link between the two
+- Interface and its implementation could be defined in different packages
+
+: Implicit implementation, which has no link to interface.
+: Structure is most close thing to class in other languages.
+: Instead of struct it could be any type such as int, string or function.
+: A type implements an interface by implementing its methods. There is no explicit declaration of intent, no "implements" keyword. (c) A tour of Go
+: Implicit interfaces decouple the definition of an interface from its implementation, which could then appear in any package without prearrangement. (c) A tour of Go
+
+* How to use interfaces?
+
+* Interface
+.code samples/simple_interface.go /^type Starter/,/^}
+
+: Define interface with one method
+
+* Function
+.code samples/simple_interface.go /^type Starter/,/^}*func Start/,/^}
+
+: Function does know nothing about incoming object except they contain method Start, which function will call.
+
+* Implementation
+.code samples/simple_interface.go /^type Job/,/^}*type Consumer/,/^}
+
+: In Go we can attach any method to any type.
+: Structure is most close data type by meaning to classes in other languages.
+
+* All together
+.play samples/simple_interface.go /START OMIT/,/END OMIT/
+
+* Pretty simple, isn't it?
+
+* Data types in Go
+
+* Go is statically typed
+Each variable has its own type
+.code samples/int_types.go
+
+The variables *i* and *j* have distinct static types and, although they have the same underlying type, they cannot be assigned to one another without a conversion. (c)
+
+.code samples/int_types_assigment.go
+
+
+* Interface type
+- Interface type is a set of methods , it can store any concrete (non-interface) type, which implements interface methods.
+.play samples/interface_assigment.go /START OMIT/,/END OMIT/
+
+
+* interface{}
+- is an empty interface with empty set of methods
+- is satisfied by any value, with *zero* or more methods
+- is statically typed
+.play samples/empty_interface.go /START OMIT/,/END OMIT/
+
+: i's type is not interface, next slide will explain why.
+: %T uses reflect.Value, see https://golang.org/pkg/fmt/
+: is satisfied by any value, hence any value could be assigned to var of interface{}  type.
+: is statically typed, see next slide
+
+* interface{} under the covers
+- is implemented by pair type *T* and value *V*
+- where *T* is concrete type like _int_, _struct_ etc.
+- *V* is a concrete value such as an _int_, _struct_ or _pointer_, never an interface itself, and has type *T*.
+.image img/interface.png
+
+.link https://research.swtch.com/interfaces
+
+* How to know what's inside?
+.play samples/interface_info.go /START OMIT/,/END OMIT/
+
+- See [[https://golang.org/pkg/fmt/][fmt]] package for details.
+
+* nil interface{} value
+.play samples/nil_interface.go  /START OMIT/,/END OMIT/
+
+: It's a common case to define a custom error to provide additional error info.
+: It contains T=*main.MyError and V=nil
+: Source: https://golang.org/doc/faq#nil_error
+
+* nil interface{} value (cont.)
+- An interface value is nil only if the V and T *are*both*unset*
+- T=nil, V is not set
+
+* One more note about interface{}
+
+* Try to avoid using it.
+
+* "interface{} says nothing" (c) Rob Pike
+.link https://go-proverbs.github.io/
+
+
+* Runtime checking for interface implementation
+: There are some case when we need to variable for particular interface implementation in runtime and type assertion can help here.
+: Source: https://golang.org/doc/effective_go.html#interface_conversions
+
+* Make an assertion for interface{} type
+.play samples/check_for_interface_implementation.go
+
+: What we have here:
+: 1. Couple of interfaces Starter with method start and Stopper with Stop().
+: 2. Job is a concrete type which implements Starter interface.
+: 3. j variable of interface{} type which initialized with concrete value.
+: 4. Than we make type assertion, if j implements interface use its method.
+: 5. If j implements an interface, variable s will be equal to the interface and ok will be true.
+
+* Let's try to use wrong method
+.play samples/check_for_interface_implementation_2.go
+
+: And it doesn't work because Stopper has not method Start.
+
+
+* How about assertion for non-interface type?
+.play samples/check_for_interface_implementation_3.go
+
+: It doesn't work.
+
+
+* It works for interface types only.
+.play samples/check_for_interface_implementation_starter_stopper.go
+
+* Type switch
+.play samples/type_switch.go /START OMIT/,/END OMIT/
+
+: Starter interface and Job struct.
+: Do function which accepts interface{} value and does something based on concrete type.
+: For int: function makes an addition with int
+: For string: function make concatenation
+: For Starter interface: it calls interface method.
+
+* Interface implementation
+
+* Private implementation
+.code samples/private_implementation_customer.go
+.code samples/private_implementation.go
+
+: Customer package with public/exported interface and private/unexported implementation.
+: Main package which initialized new CustomerRepo and execute its method.
+: Again: even if repo has more that one method, you cannot use it if repo was initialized with NewRepo function, because it returns an interface.
+: In this case you don't need to export implementation.
+
+* Independent implementation
+Job structure is defined in *job* package
+.code samples/independent_implementation_job.go
+.play samples/independent_implementation.go /START OMIT/,/END OMIT/
+
+: job package with a Job structure, which has one method.
+: we do not have defined interface
+: we use inline assertion for get particular method
+
+* Interface extending in PHP
+.code samples/interface_extends.php
+
+* Embedded interfaces
+.play samples/embedded_interfaces.go
+
+: StarterStopper has all methods from embedded interfaces.
+: Source: https://golang.org/doc/effective_go.html#embedding
+
+
+* Examples from standard library
+
+* fmt.Stringer
+.code samples/fmt_stringer.go
+
+- Used by *Print** functions of [[https://golang.org/pkg/fmt/][fmt]] package, for converting objects to string.
+.play samples/fmt_stringer_example.go
+
+: Contains one String() method
+
+* error
+.code samples/error.go
+- Used by fmt package.
+- Used for creating custom error.
+
+
+* sort.Interface
+.code samples/sort_interface.go
+- A type, typically a collection, that satisfies *sort.Interface* can be sorted by the routines in [[https://golang.org/pkg/sort/][sort]] package.
+
+: Len is the number of elements in the collection.
+: Less reports whether the element with index i should sort before the element with index j.
+: Swap swaps the elements with indexes i and j.
+
+* io.Reader / io.Writer
+.code samples/io_reader_writer.go
+- This two are simple interfaces which are widely used.
+
+.code samples/fprint_writer.go /^func Fprint/,/}
+: Fprint write `a` values into writer `w`
+
+*io.Writer* is implemented by
+- os.File
+- http.ResponseWriter
+- bytes.Buffer
+- log.Logger
+
+
+* Is integer type able to serve HTTP requests?
+
+* Why not?
+.code samples/int_web_server.go
+.code samples/handler_interface.go
+
+: Just implement Handler interface.
+
+* gRPC example
+
+* Goal
+- Our goal is to apply params *Limit* and *Page* come from incoming gRPC request to DB query.
+.code samples/service.proto
+.code samples/service.pb.go
+
+: 1. gRPC uses protobuf for describing messages.
+: 2. We define a request with these two parameters.
+: 3. protobuf compiler generates pb.go file with request structures and server/client interfaces.
+: 4. Auto-generated code is hard to change, therefore let's use what we have.
+: 5. Each field in generated structures has a getter function.
+
+* Interfaces
+We define several interfaces:
+.code samples/page_limiter_interface.go
+
+: PageLimiter for getting page and limit params
+: Applier for apply these params to query.
+: Squirrel.SelectBuilder is a objects which is used or building database query.
+
+* Helper
+.code samples/page_limiter_struct.go
+
+: It contains info about page and limit
+: It know HOW to apply it to SelectBuilder.
+: New function returns an interface PageLimitApplier
+
+* Helper (cont.)
+.code samples/from_params_helper.go
+: We have package-level function FromParams, which accepts PageLimiter and returns PageLimitApplier
+: It's necessary because gRPC request does not implement Applier interface, thus it does not know how to apply these params to SelectBuilder
+
+* Repo, service & gRPC server
+.code samples/grpc_implementation.go
+.code samples/service.go
+.code samples/repo.go /START OMIT/,/END OMIT/
+
+: Repo accepts an Applier, it doesn't use more than one method.
+: Service has a repo object, and user PageLimiter interface methods for log purposes.
+: In order to user gRPC we have to implement gRPC server interface.
+: gRPC server calls service and passes there initialized PageLimitApplier  base on gRPC request.
+
+
+
+* Conclusion
+.image img/interfaces_everywhere.jpg
+
+* Questions?
+.image img/questions.png
+
+* Links
+- [[https://en.wikipedia.org/wiki/Interface_(computing)]]
+- [[https://en.wikipedia.org/wiki/Duck_typing]]
+- [[https://go-proverbs.github.io/]]
+- [[https://golang.org/doc/effective_go.html#interfaces_and_types]]
+- [[https://golang.org/doc/effective_go.html#interface_conversions]]
+- [[https://golang.org/doc/effective_go.html#embedding]]
+- [[https://golang.org/doc/effective_go.html#interface_methods]]
+- [[https://golang.org/doc/faq#nil_error]]
+- [[https://research.swtch.com/interfaces]]

@@ -1,0 +1,24 @@
+{
+  "swagger": "2.0",
+  "info": { "title": "service.proto", "version": "1.0.0" },
+  "schemes": [ "http", "https" ],
+  "consumes": [ "application/json" ],
+  "produces": [ "application/json" ],
+  "paths": {
+    "/hello/{name}": {
+      "get": {
+        "operationId": "SayHello",
+        "responses": {
+          "200": {
+            "description": "A successful response.",
+            "schema": { "$ref": "#/definitions/greeterHelloResponse" } }
+        },
+        "parameters": [ { "name": "name", "in": "path", "required": true, "type": "string" } ]
+      } } },
+  "definitions": {
+    "greeterHelloResponse": {
+      "type": "object",
+      "properties": {
+        "message": { "type": "string" },
+        "response_time": { "type": "string", "format": "date-time" }
+      } } } }

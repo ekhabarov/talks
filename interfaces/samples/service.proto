@@ -1,0 +1,8 @@
+// service.proto
+service Orders {
+  rpc List(Request) returns (Response);
+}
+message Request {
+  int32 limit = 1;
+  int32 page = 2;
+}
