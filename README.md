@@ -1,5 +1,14 @@
 # Talks
 
+### "Protobuf-First APIs: gRPC & Co." | [Boston Golang meetup](https://www.meetup.com/bostongo/events/273933921/) | Oct 27, 2020
+
+As a very lazy developer I try to make life as easy as possible. In an ideal
+world code should write itself, but it won’t … until you say it should do this.
+In this talk we will discuss code generation and how while writing gRPC API to
+get REST for free.
+
+* [slides](https://talks.godoc.org/github.com/ekhabarov/talks/grpc-rest/grpc.slide#1)
+
 ### "Interface in Go" | [Golang Winnipeg Meetup #4](https://www.meetup.com/golangwpg/events/266794339/) | Dec 4, 2019
 It's a very very basic presentation about how to use interfaces, what is it and
 why you need it.
