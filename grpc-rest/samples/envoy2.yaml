@@ -1,0 +1,13 @@
+http_filters:
+  - name: envoy.filters.http.grpc_json_transcoder
+    config:
+      proto_descriptor: "/etc/example.pb" // HL
+      services: ["greeter.Hello"] // HL
+      convert_grpc_status: true
+      print_options:
+        add_whitespace: true
+        always_print_primitive_fields: true
+        always_print_enums_as_ints: false
+        preserve_proto_field_names: true
+
+  - name: envoy.filters.http.router

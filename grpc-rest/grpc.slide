@@ -1,0 +1,155 @@
+Protobuf-First APIs: gRPC & Co.
+October 27, 2020: Boston Golang meetup
+
+Evgeny Khabarov
+PowerFly.Consulting
+Ottawa, ON, Canada
+
+twitter: @eekhabarov
+https://dev.ms/talks
+https://powerfly.ca
+
+* What is this talk about?
+- gRPC & Protobuf.
+- Usage cases
+- REST API and how to get it for free... if you really need it
+.image img/services.png
+
+* $ whoami
+- Golang developer
+- work, work, work.... boom
+- Co-founder at PowerFly.Consulting
+- Work mostly with e-commerce companies
+- Time-to-time automate a routine by writing generators
+- [[https://github.com/ekhabarov]]
+
+* What is gRPC?
+- A high performance, open-source [[https://grpc.io][universal RPC framework.]]
+- Platform and language independent.
+- *Uses*Protobuf*for*service*definition.*
+- Uses HTTP/2 and binary serialization.
+- Supports server-, client-, and bidirectional streaming
+.image img/grpc.png
+
+* What are Protocol buffers (protobuf)?
+- "Protocol buffers are Google's language-neutral, platform-neutral, extensible mechanism for serializing structured data." (c)
+- Interface Definition Language (IDL)
+- Clearly defines an API interface in **.proto* files
+- Shareable aka generate your own clients.
+.link https://developers.google.com/protocol-buffers/docs/proto3
+
+* Protobuf compiler (protoc)
+- Parses *.proto* files and passes parsed data to plugins.
+- Output depends on plugin.
+.image img/protoc.png
+
+* Protobuf source: example.proto
+.code samples/example.proto
+.code samples/protoc_cmd.sh
+
+* Generated code: example.pb.go
+.code samples/example.pb.go  /^package /,/^$
+.code samples/example.pb.go  /^type GreeterServer/,/^}
+.code samples/example.pb.go  /^type GreeterClient/,/^}
+.code samples/example.pb.go  /^type HelloRequest/,/^}
+.code samples/example.pb.go  /^type HelloResponse/,/^}
+- It also contains a bunch of code for serialization.
+
+* Implementation
+.code samples/implementation.go /^type server/,/^}*func main/,/^}
+
+* Call it from Go code
+.code samples/client.go /^package /,/^$
+.code samples/client.go /func main/,/^}
+
+* Call it from command line
+.code samples/grpcurl.sh
+.link https://github.com/fullstorydev/grpcurl
+
+* Several cases from my experience
+
+* 1st iteration (REST + gRPC)
+- We've build REST API first
+- Used it internally & externaly
+- Faced with performance issues
+- Added gRPC for internal communication
+- Got rid of performance issue, received sync-related issue
+.image img/services_http.png 300 500
+
+* 2nd iteration (gRPC + REST)
+- We've build gRPC API first, but still duplicate logic for REST part
+- No performance issues, but still had some issues with code sync
+.image img/services_http_grpc.png
+
+* I'm too lazy to support duplications in my code
+.image img/sloth.jpg 500 800
+How we can get rid of it?
+
+* Remember this image?
+.image img/grpc-gateway.png
+- Can we use any plugin to generate REST?
+
+* 3rd iteration: yes, we can!
+.link https://github.com/grpc-ecosystem/grpc-gateway
+.code samples/example-gateway.proto
+.code samples/protoc_gateway_cmd.sh
+
+* Generated code: example.pb.gw.go
+- Contains HTTP reverse proxy.
+- Calls gRPC service directly underthehood.
+
+* Change main.go a bit
+.code samples/implementation_gateway.go /^type server/,/^}*func main/,/^}
+
+* But...
+- while you have HTTP endpoints inside the cluster, someone will use it again and again
+.image img/services_http_grpc.png
+
+
+* Can we do even better?
+.image img/tea.jpg 415 500
+
+* 4th iteration: Envoy proxy
+- That's where we just "turn on" REST API
+- No code needed! Config only
+- Envoy uses the same annotations as grpc-gateway
+.code samples/example-gateway.proto
+
+* main.go
+.code samples/implementation.go /^type server/,/^}*func main/,/^}
+
+* Run protoc
+.code samples/protoc_envoy_cmd.sh
+
+* envoy.yaml
+.code samples/envoy1.yaml
+
+* envoy.yaml (cont.)
+.code samples/envoy2.yaml
+
+* Finally
+.image img/services-envoy.png
+
+* Pros & Cons
+- Good enough solution
+*Pros*:
+
+- Automation
+- Declarative development.
+- Well-defined API interface
+- Fast implementation, when you have appropriate toolset.
+- Less code.
+- Extendable with plugins.
+
+* Pros & Cons (cont.)
+*Cons*:
+
+- It's not simple from the beginning
+- gRPC is hard to debug in compare with REST.
+- Generated code is hard to fix.
+- Toolset: different versions. (can be fixed with Bazel)
+
+* Tools & libs
+- [[https://bazel.build/][Bazel]]
+- [[https://github.com/grpc/grpc-web][grpc-web]]
+- Custom plugins like [[https://github.com/bold-commerce/protoc-gen-struct-transformer]]

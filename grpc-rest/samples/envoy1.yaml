@@ -1,0 +1,15 @@
+filter_chains:
+  - filters:
+      - name: envoy.filters.network.http_connection_manager
+        config:
+          stat_prefix: grpc_json
+          codec_type: auto
+          route_config:
+            name: local_route
+            virtual_hosts:
+              - name: local_service
+                domains: ["*"]
+                routes:
+                  - match: { prefix: "/greeter.Hello/", grpc: {}} // HL
+                    route: { cluster: hello } // HL
+
