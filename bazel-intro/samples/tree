@@ -1,0 +1,25 @@
+.
+├── BUILD // HL
+├── go_deps.bzl
+├── go.mod
+├── helpers.bzl
+├── k8s // HL
+│   ├── api-deployment.yaml
+│   ├── BUILD // HL
+│   ├── envoy
+│   │   ├── BUILD // HL
+│   │   ├── config-map.yaml
+│   │   └── deployment.yaml
+│   └── namespace.yaml
+├── service-one // HL
+│   ├── BUILD // HL
+│   ├── main.go
+│   ├── pb
+│   │   ├── BUILD // HL
+│   │   └── service-one.proto // there is no *.pb.go
+│   └── server
+│       ├── BUILD // HL
+│       └── server.go
+└── WORKSPACE // defines a project root
+
+

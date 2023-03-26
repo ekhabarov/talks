@@ -1,0 +1,7 @@
+# .bazelrc
+
+build --local_ram_resources=HOST_RAM*.5 --local_cpu_resources=4
+
+test --local_ram_resources=HOST_RAM*.1 --local_cpu_resources=2
+
+run --local_ram_resources=HOST_RAM*.5
