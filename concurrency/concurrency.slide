@@ -1,0 +1,202 @@
+Concurrency in Go. Part 1.
+29 May 2019
+
+Evgeny Khabarov
+Golang developer
+
+* Agenda
+- Concurrency
+- Goroutines
+- Channels
+
+* Intro
+.play samples/intro.go /^func main/,/^}
+(c) Ricky
+
+
+* Concurrency & Parallelism
+- These two are some of the most famous things in Go.
+
+
+* "Concurrency is not parallelism." (c) Rob Pike
+* Concurrency is a way to structure software, particularly as a way to write clean code.
+* Parallelism is simple execution several goroutines in parallel.
+
+: If you need to write a code which works in parallel take Go.
+
+
+
+* Goroutines (1/3)
+
+- A goroutine is a lightweight thread managed by the Go runtime.
+- Goroutines run in the same address space, so access to shared memory must be *synchronized*.
+
+.play samples/goroutine.go /^func main/,/^}
+
+: PRESS RUN!!! several times.
+: Try to print Doe.
+
+: It's ok to run 100k goroutines.
+: Access to the memory could be synchronized with primitives from "sync" package or with channels.
+:  >>> Later we'll see how to sync this access.
+
+* Goroutines (2/3)
+.play samples/goroutine_with_timeout.go /^func main/,/^}
+
+: PRESS RUN!!!
+: Added timeout to wait while goroutine finish its work.
+: DO NOT sync goroutines this way!
+
+* Goroutines (3/3)
+.play samples/goroutine_with_timeout_2.go /^func main/,/^}
+- *DO* *NOT* use Sleep for sync goroutines.
+
+: PRESS RUN!!!
+: Goroutine which works a bit longer than timeout.
+: Hello, Doe will never be printed.
+: Corrent usage of timeout I'll show a later
+
+
+* Channels
+
+
+* What is channel?
+- Channels are a typed conduit through which you can send and receive values.
+- Channels are used for synchronize goroutines.
+- There are two types of channels: *unbuffered* and *buffered*.
+
+* Unbuffered channels (1/3)
+- By default, sends and receives block until the other side is ready.
+- _func_ _main_ is a main goroutine.
+
+.play samples/chan_unbuffered_deadlock_send.go /^func main/,/^}
+.play samples/chan_unbuffered_deadlock_receive.go /^func main/,/^}
+
+: PRESS RUN!!!
+: We're trying to send value to channel.
+: This way we're blocking main goroutine.
+: As a result - deadlock, because noone is listening to this channel.
+
+* Unbuffered channels (2/3)
+.play samples/chan_unbuffered_sent.go /^func main/,/^}
+
+: PRESS RUN!!! several time.
+: Now we have goroutine which is listening to channel.
+: Seems like should be fine, but it's not.
+: Try to print "sent" only.
+
+* Unbuffered channels (3/3)
+.play samples/chan_unbuffered_done.go /^func main/,/^}
+
+: PRESS  RUN!!!
+
+
+* Buffered channels (1/2)
+- Sends to a buffered channel block only when the buffer is full.
+
+.play samples/chan_buffered_send_1.go /^func main/,/^}
+.play samples/chan_buffered_send_2.go /^func main/,/^}
+
+: PRESS  RUN!!!
+: 1st: sent is OK because chan is: a) buffered b) has as size 1.
+: 2nd: deadlock is on 2nd send, because: a) channel is buffered b) size is 1.
+
+
+* Buffered channels (2/2)
+- Receives block when the buffer is empty.
+.play samples/chan_buffered_receive_1.go /^func main/,/^}
+.play samples/chan_buffered_receive_2.go /^func main/,/^}
+
+: PRESS  RUN!!!
+: Here is same example as for unbuffered channels but with channel size.
+: 1st: deadlock on receive, because chan is empty.
+: 2nd: receive is OK, because 1 send and 1 receive.
+
+* Try to avoid to use buffered channels
+
+* Channel directions (1/2)
+- By default channels are bidirectional.
+- It's possible to use receive-only
+
+.play samples/chan_receive_only.go /^func/,/^}\n\nfunc/,/^}
+.play samples/chan_receive_only_2.go  /^func/,/^}\n\nfunc/,/^}
+
+: PRESS  RUN!!!
+: 1st: inside calc function we can only read incoming chan.
+: 2nd: if we try to write something we'll get an error.
+: Explain what's happen in 2nd example.
+
+
+* Channel directions (2/2)
+- ...or send-only channels.
+
+.play samples/chan_send_only.go /^func/,/^}\n\nfunc/,/^}
+.play samples/chan_send_only_2.go /^func/,/^}\n\nfunc/,/^}
+
+: PRESS  RUN!!!
+: 1st: works fine, takes v, multiply it by 2 and send it to the send-only chan.
+: 2nd: doesn't work because calc function tries to receive value from send-only channel.
+
+* range over chan
+.play samples/range_over_chan.go /^func/,/^}
+
+: PRESS  RUN!!!
+: 1st goroutine generates values and sends it to the channel
+: 2nd one is listening for new values from channel and sums it.
+: for...range c will be working till channel c will be closed.
+: Only sender should close channel, never the receiver
+: Without close(c) it lead to deadlock.
+
+* Closed channel
+- Usually it's not necessary to close channels.
+
+Receive from closed channel:
+.play samples/closed_chan_receive.go /^func/,/^}
+Send to closed channel:
+.play samples/closed_chan_send.go /^func/,/^}
+
+: PRESS  RUN!!!
+: Receive from closed channel returns values or default values if channel is empty.
+: Send to closed channel cause panic.
+
+
+* Closed channel (cont.)
+.play samples/closed_chan_check.go /^func/,/^}
+.play samples/closed_chan_check_2.go /^func/,/^}
+
+: PRESS  RUN!!!
+: ok is false if no more values in channel.
+
+
+* Select
+.play samples/select.go  /^func/,/^}\nfunc/,/^}
+
+: PRESS  RUN!!!
+: calc function doesn't know how many elements inside out channel, it works till done channel will has a value.
+: we easily can change number of elements.
+: main goroutine will send a "signal" that there are no more elements will be produced.
+: and main goroutine wait for signal from calc goroutine about cals finish its work.
+: without <-finish channel calc goroutine will not print a result.
+
+* Select with default (1/2)
+.play samples/select_default.go  /^func/,/^}
+
+: PRESS  RUN!!!
+: c is unbuffered channel
+: try to send a value there.
+: receiver is not ready
+
+* Select with default (2/2)
+.play samples/select_default_2.go  /^func/,/^}
+
+: PRESS  RUN!!!
+
+* Select with timeout
+.play samples/select_timeout.go  /^func/,/^}
+
+: PRESS  RUN!!!
+: c is unbuffered channel, so it blocked till receiver is ready
+: we have no receiver here
+: tiker.C returns a channel where values appear every second
+: Try to send a value to c
+: timed out
