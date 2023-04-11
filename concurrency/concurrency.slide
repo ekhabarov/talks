@@ -1,8 +1,9 @@
-Concurrency in Go. Part 1.
+Concurrency in Go.
 29 May 2019
 
 Evgeny Khabarov
-Golang developer
+
+https://ekhabarov.com/talks
 
 * Agenda
 - Concurrency
@@ -19,11 +20,11 @@ Golang developer
 
 
 * "Concurrency is not parallelism." (c) Rob Pike
-* Concurrency is a way to structure software, particularly as a way to write clean code.
-* Parallelism is simple execution several goroutines in parallel.
+
+- *Concurrency* is a way to structure software, particularly as a way to write clean code.
+- *Parallelism* is simple execution several goroutines in parallel.
 
 : If you need to write a code which works in parallel take Go.
-
 
 
 * Goroutines (1/3)
@@ -38,7 +39,7 @@ Golang developer
 
 : It's ok to run 100k goroutines.
 : Access to the memory could be synchronized with primitives from "sync" package or with channels.
-:  >>> Later we'll see how to sync this access.
+: Later we'll see how to sync this access.
 
 * Goroutines (2/3)
 .play samples/goroutine_with_timeout.go /^func main/,/^}
@@ -54,7 +55,7 @@ Golang developer
 : PRESS RUN!!!
 : Goroutine which works a bit longer than timeout.
 : Hello, Doe will never be printed.
-: Corrent usage of timeout I'll show a later
+: Current usage of timeout I'll show a later
 
 
 * Channels
@@ -148,8 +149,6 @@ Golang developer
 : Without close(c) it lead to deadlock.
 
 * Closed channel
-- Usually it's not necessary to close channels.
-
 Receive from closed channel:
 .play samples/closed_chan_receive.go /^func/,/^}
 Send to closed channel:

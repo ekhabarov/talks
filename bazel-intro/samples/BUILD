@@ -1,19 +1,15 @@
 load("@io_bazel_rules_go//go:def.bzl", "go_binary", "go_library")
-load("@io_bazel_rules_docker//go:image.bzl", "go_image")
-load("@io_bazel_rules_docker//container:container.bzl", "container_image")
-load("@io_bazel_rules_k8s//k8s:object.bzl", "k8s_object")
-load("//:helpers.bzl", "namespace")
+load("@io_bazel_rules_docker//container:container.bzl", "container_image", "container_push")
 
 go_library(
     name = "service-one_lib", // HL
     srcs = ["main.go"],
-    importpath = "github.com/ekhabarov/blog-code-snippets/bazel-k8s-envoy/service-one",
+    importpath = "github.com/ekhabarov/bazel-k8s-envoy/service-one",
     visibility = ["//visibility:private"],
     deps = [
         "//service-one/pb", # internal deps // HL
         "//service-one/server",
         "@org_golang_google_grpc//:go_default_library", # external deps // HL
-        "@org_golang_google_grpc//reflection",
     ],
 )
 
@@ -23,38 +19,42 @@ go_binary(
     visibility = ["//visibility:public"],
 )
 
-go_image(
-    # uses distroless images
-    name = "image", // HL
-    embed = ["service-one_lib"],
-    importpath = "github.com/ekhabarov/blog-code-snippets/bazel-k8s-envoy/service-one",
-)
-
 container_image(
-    name = "custom_image", // HL
+    name = "image", // HL
     base = "@go_base//image",
     entrypoint = ["/service-one"],
-    env = {
-        "ENV_VAR1": "value1",
-        "ENV_VAR2": "value2",
-    },
     files = [
         ":service-one",
     ],
-    labels = {
-        "version": "1.0.0",
-    },
     ports = [
-        "5001/tcp",
+        "5000/tcp",
     ],
 )
 
-k8s_object(
+genrule(
     name = "yaml", // HL
-    kind = "deployment",
-    substitutions = {
-        "%{apiname}": "service-one",
-        "%{namespace}": namespace(),
-    },
-    template = "//k8s:api-deployment-yaml",
+    srcs = [
+        "//k8s:defaults.yaml",
+        "//k8s/base:service.yaml",
+        ":values.yaml",
+    ],
+    outs = ["manifest.yaml"],
+    cmd = """
+      echo $(location @com_github_vmware_tanzu_carvel_ytt//cmd/ytt) \
+         `ls $(SRCS) | sed 's/^/-f /g'` \
+          > $@
+    """,
+    executable = True,
+    tools = [
+        "@com_github_vmware_tanzu_carvel_ytt//cmd/ytt",
+    ],
+)
+
+container_push(
+    name = "push_image",
+    format = "Docker",
+    image = ":image",
+    registry = "ghcr.io",
+    repository = "ekhabarov/service-one",
+    tag = "$(IMAGE_TAG)",
 )
