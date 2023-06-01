@@ -1,0 +1,8 @@
+bazel build //go:generate_hello_go => hello.go
+  |
+  |--> bazel build //go:hello-world_lib => hello-wolrd.a
+          |
+          |--> bazel build //go:hello-world => hello-world
+                  |
+                  |--> bazel run //go:hello-world => runs hello-world
+

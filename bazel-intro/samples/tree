@@ -1,5 +1,6 @@
 .
 ├── BUILD // HL
+├── authz // HL
 ├── go_deps.bzl
 ├── go.mod
 ├── helpers.bzl
@@ -16,10 +17,10 @@
 │   ├── main.go
 │   ├── pb
 │   │   ├── BUILD // HL
-│   │   └── service-one.proto // there is no *.pb.go
+│   │   └── service-one.proto // there is no *.pb.go // HL
 │   └── server
 │       ├── BUILD // HL
 │       └── server.go
-└── WORKSPACE // defines a project root
+└── WORKSPACE // HL
 
 

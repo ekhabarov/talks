@@ -1,55 +1,99 @@
-Introduction to Bazel
-February 7, 2022
+When "go build" isn't enough: Introduction to Bazel
+June 1, 2023
 
-Evgeny Khabarov
-PowerFly.Consulting
+Eugene Khabarov
+PowerFly Consulting
 Ottawa, ON, Canada
 
 https://ekhabarov.com/talks
 
-* Demo: gRPC microservices and Envoy.
-.image img/plan.png 350 700
-- build two gRPC services
-- build Docker images for services ^, and Evnoy proxy
-- deploy all into local k8s cluster (minikube)
-.link https://github.com/ekhabarov/bazel-k8s-envoy
+* Who am I
+- Golang consultant
+- Build APIs for fun and PROFIT!
+- Focused on Developers' productivity and Team velocity in general.
 
-* Tools
+* What we're going to build?
+- Go binaries
+- Docker images
+- Kubernetes manifests.
+
+* When "go build" is enough?
+- When we already have *all* of the source files in place, i.e., we can run "go
+  build" *only* and produce a *binary*.
+- When a project doesn't require specific versions of dependencies*.
+
+* When "go build" is not enough?
+When we have to generate code *before* the build:
+
+- *gRPC/protobuf*: *.proto => *.go
+- *go*generate*:  any => *.go
+- *go_bindata*: any => *.go
+- *ffjson*: *.go => *.go
+- *ragel*: *.rl => *.go
+- etc.
+
+Other requirements:
+
+- Build reproducibility.
+- Build isolation (Hello Docker!).
+- Build restarts in case of failure (Hello Make!).
+- Docker/Kubernetes
+
+* How we define a dependency?
+- Go packages: go.mod/go.sum
+- Go compiler
+- Generators
+- Environment
+- Bazelisk (.bazelversion)
+
+* Tools involved into build process
 - Golang
 - protoc
 - protoc-gen-go
-- Tilt
 - Docker
-- Ytt
+- Ytt/Kustomize/Helm
+- Make
+- _Python_
 
-* What we're trying to solve?
-- Multi-step build automation: install and build everything with one command
-- Fix dependency versions: packages, binaries
-- Automatically install external dependencies
+* Do you like games?
 
-* Correctness is guaranteed
+.image img/wl2.png 300 300
+
+* Once I've seen this...
+
+*.yaml + Jinja template => *Python* => *.proto => *protoc* => *.pb.go => *Go* => binary
+
+* What we're going to solve?
+To automate multi-step build process:
+
+- Automatically install all external dependencies during the build.
+- Generate and build everything with one-two commands.
+- Pin all dependencies' versions: Go, Go packages, generators.
+- Build all inside isolated environment.
+
+* Hello Bazel!
 
 * What is Bazel?
 - An open-source build and tests tool
-- Invented at Google, aimed to build huge *monorepo*
-- Internal name Blaze
-- Open-sourced in 2015
+- Similar to Make, Ant, Gradle, Buck, Pants and Maven
+- Invented at Google (open-sourced in 2015), aimed to build huge *monorepo*
+
+
+Bazel shines at building and testing projects with the following properties:
+
+- Projects with a large codebase
+- Projects written in (multiple) compiled languages
+- Projects that deploy on multiple platforms
+- Projects that have extensive tests
+
+.link https://bazel.build/about/faq
 
 * Build
-- Parallel build: Bazel uses as many cores as it found.
-- Build can be run on a local or remote machine.
-- Build everything from sources including dependencies.
-- Re-build changed parts only.
-
-* Limiting resources
-
-- By default
-
+- Parallel build: Bazel uses as many cores as it found*.
 .image img/cores.png
-
-- Added limits
-
-.code samples/bazelrc
+- Build can be run on a local or remote machine.
+- Builds everything from sources including dependencies.
+- Re-builds changed parts only.
 
 * Cache
 - Bazel caches all downloaded dependencies.
@@ -57,99 +101,140 @@ https://ekhabarov.com/talks
 - Cache shared between workspaces.
 - Cache can be resided on a remote machine and shared between teams.
 
-* Multi-platform & multi-language support
-- Can be run on Linux, masOS, Windows
-- Supports the following languages: C/C++, Java, Python, Golang, Protocol Buffers, Shell, etc.
-- As well as: Docker, Kubernetes
+* A couple of concepts...
 
-* Hermeticity & sandboxing
-Hermeticity:
+* Hermeticity
+When given the same input source code and product configuration, a hermetic
+build system always returns the same output by isolating the build from changes
+to the host system.
 
-- no network access
-- restrict access to declared inputs only
-- restrict access to ENV variables.
+*Isolation*: Hermetic build systems treat tools as source code.
 
-Sandboxing:
+*Source*identity*: Hermetic build systems try to ensure the sameness of inputs.
 
-- Action isolation inside a restricted temporary exevcution root.
-- Imroves hermeticity.
+.link https://bazel.build/basics/hermeticity
 
-* Build graph
-- The dependency graph that Bazel constructs and traverses to perform a build
+* Sandboxing
+Is a permission restricting strategy that isolates processes from each other or
+from resources in a system. For Bazel, this means restricting file system
+access.
+
+Bazel's file system sandbox runs processes in a working directory that only
+contains known inputs, such that compilers and other tools don't see source
+files they should not access, unless they know the absolute paths to them.
+
+.link https://bazel.build/docs/sandboxing
+
+* What else?
+
+* Bazel query
+Some questions that query answers:
+
+- What packages use package _X_?
+- What packages exist beneath _foo_?
+- What files are generated by rules in the _foo_ package?
+- What's the set of BUILD files needed to build _//foo_?
+- What rule target(s) contain file _path/to/file.go_ as a source?
+
+.link https://docs.bazel.build/versions/main/query-how-to.html Bazel Query How-To
+
+* Dependency graph
 
 .image img/graph.png 400 500
 
 .code samples/vis
 
-* Bazel query
-Some questions that query answers:
-- What packages exist beneath foo?
-- What files are generated by rules in the foo package?
-- What's the set of BUILD files needed to build //foo?
-- What rule target(s) contain file path/to/file/bar.java as a source?
-- What packages does the foo tree depend on, excluding foo/contrib?
+* Extensibility
+- rules_go
+- rules_proto
+- rules_docker
+- rules_k8s
+- rules_oci
+- rules_dart
+- rules_erlang
+- rules_haskell
+- rules_kotlin
+- etc.
 
-.link https://docs.bazel.build/versions/main/query-how-to.html Bazel Query How-To
+.link https://awesomebazel.com
 
-* Extendable with rules
-.link https://github.com/ekhabarov/blog-code-snippets/tree/master/how-to-bazel/genereate-and-compile-go-code Hello world generator
-.link https://awesomebazel.com/ Awesome Bazel
+* It's demo time!
+.image img/shutup.jpg
 
-* Let's look inside
+* Hello world generator
+- go build -o *generator* hello-world-generator/main.go
+- ./generator > generated.go
+- go build -o *hello-world* generated.go
+- ./hello-world
+
+.link https://github.com/ekhabarov/helloworld-generator
+
+* Hello world generator (main.go)
+.code samples/hello-world.go
+
+* Hello world generator
+.code samples/hello-world
+
+* and with Bazel...
+
+* Hello world generator: Bazelified
+.code samples/hw-bazel-tree
+There is no Go files here.
+
+- *WORKSPACE* file: defines a project root and may contain external dependencies.
+- *BUILD* file: defines a package. Declares build rules for the package.
+
+.link https://github.com/ekhabarov/blog-code-snippets/tree/master/how-to-bazel/genereate-and-compile-go-code Github Repo
+.link https://ekhabarov.com/post/how-to-generate-code-with-bazel/ Blog post
+
+* Hello world generator: Bazelified (cont.)
+WORKSPACE
+.code samples/hw-bazel-workspace
+
+* Hello world generator: Bazelified (cont.)
+go_deps.bzl
+.code samples/hw-bazel-deps
+.link https://github.com/ekhabarov/helloworld-generator
+
+* Hello world generator: Bazelified (cont.)
+go/BUILD
+.code samples/hw-bazel-build
+
+* Hello world generator: Bazelified (cont.)
+.code samples/hw-bazel-run
+.code samples/hw-bazel-run-tree
 
 * Glossary
-- *Action*: A command to run during the build, for example, a call to a compiler that takes artifacts as inputs and produces other artifacts as outputs.
-- *Rule*: A function implementation that registers a series of actions.
-- *Target*: A buildable unit. Can be a rule target, file target, or a package group.
-- *Label*: An identifier for a target. A fully-qualified label such as _//service-one/pb:pb_
+- *Rule*: A function implementation that *registers* a series of actions.
+- *Action*: A command to run during the build, for example, a call to a compiler
+  that takes artifacts as *inputs* and produces other artifacts as *outputs*.
+- *Target*: A buildable unit. Most targets are one of two principal kinds, files and rules.
+- *Label*: A unique name for a target.
 
 .link https://docs.bazel.build/versions/main/glossary.html#rule Full version
 
 * Glossary (cont.)
-service-one/BUILD
+go/BUILD
 
-.code samples/BUILD /^go_library/,/^\)
+.code samples/hw-BUILD /^go_library/,/^\)
 
-- Actions: takes a _main.go_ and produces _service-one.a_
-- Rule: _go_library_
-- Target: a _go_library_ call
-- Label: _//service-one:service-one__lib_
+- Rule: _go__library_
+- Action: takes a _hello.go_ and produces _hello-world.a_
+- Target: _hello-world__lib_
+- Label: _//go:hello-world__lib_
 
-* Go Project structure
-.code samples/tree
+* Labels
 
-* WORKSPACE.bazel
-- Defines a project root
+.code samples/labels
 
-.code samples/WORKSPACE /^http_archive/,/^\)
-.code samples/WORKSPACE /^go_register_toolchains/
-.code samples/WORKSPACE /^TILT_VERSION/,/^\)
+* Demo: microservices & k8s
+.image img/plan.png 350 700
+- build two gRPC services
+- build Docker images for the services, and for Evnoy proxy
+- deploy all into local k8s cluster (minikube)
+.link https://ekhabarov.com/envoy
 
-* BUILD.bazel
-- Defines a package
-- Contains directives of how to build a package, what the deps are, etc.
-
-.code samples/BUILD /io_bazel_rules_go/
-.code samples/BUILD /^go_library/,/^\)
-.code samples/BUILD /^go_binary/,/^\)
-
-* BUILD.bazel (cont.)
-.code samples/BUILD /io_bazel_rules_docker/
-.code samples/BUILD /^container_image/,/^\)
-
-* BUILD.bazel (cont.)
-.code samples/BUILD /^container_push/,/^\)
-
-* BUILD.bazel (cont.)
-.code samples/BUILD /^genrule/,/^\)
-
-* go_deps.bzl: list of all dependencies
-called from WORKSPACE files.
-
-.code samples/go_deps.bzl /^def/,/^\ \ \ \ \)
-.code samples/go_deps_patched.bzl /^def/,/^\ \ \)
-
-can be used by name: _@co__honnef__go__tools//:go__default__library_
+* Should we write BUILD files manually?
 
 * Gazelle
 - Generates BUILD files
@@ -158,9 +243,13 @@ can be used by name: _@co__honnef__go__tools//:go__default__library_
 - Manages dependencies
 - Works in ~95% of cases
 
-* Pros & Cons
-- Cannot use `go build` directly
-- go.mod + go_deps.bzl
-- Poor IDE/editors integration
+* Conclusion
 - Takes a time to learn: ecosystem, rules, etc.
+- "go build" cannot be used directly.
+- go.mod + go_deps.bzl
+- Poor IDE/editors integration (broken autocomplete): work in progress.
 
+*
+.image img/colombo.png 500 800
+
+* Bazel is not perfect, but it solves particular issues.

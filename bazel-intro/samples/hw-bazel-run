@@ -1,0 +1,3 @@
+% bazel run //go:hello-world -- -name Toronto
+Hello, Toronto!
+

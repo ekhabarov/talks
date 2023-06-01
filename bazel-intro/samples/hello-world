@@ -1,0 +1,25 @@
+% go build -o generator main.go // HL
+
+% ./generator > generated.go // HL
+
+% cat generated.go // HL
+package main
+
+import (
+        "flag"
+        "fmt"
+)
+
+var name = flag.String("name", "World", "Just a name")
+
+func main() {
+        flag.Parse()
+
+        fmt.Printf("Hello, %s!\n", *name)
+}
+
+% go build -o hello-world generated.go // HL
+
+% ./hello-world // HL
+Hello, World!
+

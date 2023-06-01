@@ -1,0 +1,8 @@
+.
+├── BUILD // HL
+├── WORKSPACE // HL
+├── cat
+│   └── BUILD // HL
+├── go
+│   └── BUILD // HL
+└── go_deps.bzl

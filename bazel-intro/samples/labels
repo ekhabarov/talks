@@ -1,0 +1,17 @@
+Common format
+% bazel (build | test | run) //path/to/package:target-name
+
+Build everything in a workspace
+% bazel build //...
+
+Build everything in package "abc" recursively
+% bazel build //abc/...
+
+Build external dependency
+% bazel build @com_github_ekhabarov_helloworld_generator//...
+
+Build one target
+% bazel build //go:hello-world
+
+Run one target
+% bazel build //go:hello-world

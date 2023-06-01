@@ -5,11 +5,10 @@ go_library(
     name = "service-one_lib", // HL
     srcs = ["main.go"],
     importpath = "github.com/ekhabarov/bazel-k8s-envoy/service-one",
-    visibility = ["//visibility:private"],
     deps = [
-        "//service-one/pb", # internal deps // HL
+        "//service-one/pb", # internal dependency // HL
         "//service-one/server",
-        "@org_golang_google_grpc//:go_default_library", # external deps // HL
+        "@org_golang_google_grpc//:go_default_library", # external dependency // HL
     ],
 )
 
