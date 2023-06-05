@@ -18,8 +18,7 @@ https://ekhabarov.com/talks
 - Kubernetes manifests.
 
 * When "go build" is enough?
-- When we already have *all* of the source files in place, i.e., we can run "go
-  build" *only* and produce a *binary*.
+- When we already have *all* of the source files in place, i.e., we can run "go build" *only* and produce a *binary*.
 - When a project doesn't require specific versions of dependencies*.
 
 * When "go build" is not enough?
@@ -249,7 +248,7 @@ go/BUILD
 - go.mod + go_deps.bzl
 - Poor IDE/editors integration (broken autocomplete): work in progress.
 
-*
+* Just one more thing...
 .image img/colombo.png 500 800
 
 * Bazel is not perfect, but it solves particular issues.
