@@ -1,0 +1,20 @@
+% go build -o hw_generator main.go // HL
+
+  //go:generate hw_generator > hw.go
+
+% go generate ./... // HL
+
+% cat hw.go // HL
+package main
+
+import "fmt"
+
+func main() {
+    fmt.Println("Hello, World!")
+}
+
+% go build -o hello-world hw.go // HL
+
+% ./hello-world // HL
+Hello, World!
+

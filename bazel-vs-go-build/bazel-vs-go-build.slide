@@ -1,0 +1,257 @@
+When "go build" isn't enough: Introduction to Bazel
+Apr 25, 2024
+
+Eugene Khabarov
+Lead Developer, Arctic Wolf
+Ottawa, ON, Canada
+
+https://ekhabarov.com
+
+* Agenda
+- Build process
+- Dependencies
+- Bazel
+
+* Build and dependencies
+
+* What is "go build"?
+- A command which compiles the packages named by the import paths, along with their _dependencies_.
+- *go*build* takes a list of ***.go* files as an argument and produces a executable binary.
+
+.image img/build-process.jpg 300 850
+
+.link https://pkg.go.dev/cmd/go#hdr-Compile_packages_and_dependencies  Compile packages and dependencies
+
+* Do we have all of the *.go files from the beginning?
+- // go:generate _<some_arbitrary_binary_or_script_here>_
+- make generate
+- generate.sh
+- etc.
+
+.image img/build-generator.jpg 300 850
+
+* Dependencies: part I
+- Go packages
+- Go compiler
+- Generators
+
+* Where do we run our build?
+- MacOS / Linux / etc.
+- amd64 / arm64 / etc.
+- Local machine / CI runner / etc.
+
+* Dependencies: part II
+- *Host*machine* is a machine where we run a build
+- *Target*machine* is a machine we build software for
+- Environment variables
+
+*
+.image img/binaries.jpg 500 1000
+
+* Publishing
+
+- Container images
+- tar/zip archives: AWS lambdas
+- Kubernetes manifests / Helm charts / CloudFormation templates / etc.
+- etc.
+
+* Dependencies: part III
+- Docker
+- Kustomize / Ytt / Helm / any other templating tool
+- AWS cli
+- Make (for some automation of all above)
+- etc.
+
+* What is the dependency, btw?
+
+.image img/everything_is_a_dep.jpeg
+
+* How do we control our dependencies?
+- *Go*packages*: go.mod/go.sum.
+- *Go*compiler*: specific version pre-installed into container image or random Go version on host machine.
+- *Generators*: depends on generator.
+- *Platforms*: build flags or running build on a specific platform.
+- *Environment*variables*: explicitly set during the build.
+- *Docker*/*Kustomize*/*Ytt*/*Helm*/*AWS*cli*: do we?
+
+* What else should we consider during the build process?
+- Is our build reproducible?
+- Is our build well isolated/hermetic*? (Hello Docker!).
+- When build fails, can we restart from the failure point but not from the beginning?
+
+ * more on this later
+
+* The output of the build process aka artifacts
+- Go binaries
+- Container images and/or tar/zip archives
+- YAML manifests
+
+We're going to build and publish *ready-to-deploy* artifacts, but not to deploy them.
+
+.image img/artifacts.jpg 360 600
+
+
+* Why "go build" isn't enough?
+- *go*build* is just an one step of the build process.
+- While what we actually need is a Build orchestration.
+
+* Problem scope
+Automate the following process:
+
+- Download and install *all* necessary dependencies (generators, compilers, tools, etc.)
+- Build artifacts.
+- Publish artifacts to ECR / S3 / etc.
+
+Other requirements:
+
+- Make a build as isolated as possible.
+- Make a build as reproducible as possible, i.e. pin versions of *all* dependencies.
+
+* Bazel
+
+* Hello Bazel!
+
+- An open-source build and tests tool that uses human-readable, high-level build language to define build in a declarative way.
+- Aimed to build large codebases.
+- Supports multi-language and multi-platforms builds
+- It unifies build approaches across multiple languages and multiples toolchains.
+
+.image img/bazel-logo.png
+
+* Build & cache
+- Parallel build: Bazel uses as many cores as it found.
+.image img/cores.png
+- Build can be run on a local or remote machine.
+- Can build everything from sources including dependencies.
+- Bazel caches all downloaded dependencies and intermediate build results.
+- Tracks changes in sources and rebuilds changed parts only.
+
+* Hermeticity & Sandboxing
+
+*Hermiticity:*
+
+When given the same input *source*code* and *product*configuration*, a hermetic build system always returns the same output, i.e. hermetic builds are *insensitive* to libraries and other software installed on the host machine.
+
+*Source*identity*:
+
+Hermetic build systems try to ensure the sameness of inputs by using checksums to identify changes to the build's input.
+
+*Sandboxing:*
+
+Compilers and other tools during the build have an access to explicitly defined inputs only.
+
+.link https://bazel.build/docs/sandboxing
+.link https://bazel.build/basics/hermeticity
+
+* It's demo time!
+.image img/shutup.jpg
+
+
+* Hello world generator (main.go)
+.code samples/hello-world.go
+.link https://github.com/ekhabarov/helloworld-generator
+
+* Hello world generator
+.code samples/hello-world
+
+* And with Bazel
+.code samples/hw-bazel-run
+
+- *run* - Bazel command.
+- *//go:hello-world* - label, a unique name for a target.
+- *//* - project root.
+- *//go* - package.
+- *:hello-world* - build target.
+
+* Hello world generator: Bazelified
+
+- *WORKSPACE*: defines a project root *//* and may contain external dependencies.
+- *BUILD.bazel*: defines a package like *//* or *//go*. Declares zero or more build targets for the package. In most of the cases Bazel package structure is the same as directory structure.
+
+.code samples/hw-bazel-tree
+
+.link https://github.com/ekhabarov/blog-code-snippets/tree/master/how-to-bazel/genereate-and-compile-go-code Github Repo
+.link https://ekhabarov.com/post/how-to-generate-code-with-bazel/ Blog post
+
+* Starlark
+Starlark syntax is a strict subset of Python and Starlark semantics is almost a subset of that language. In particular, its data types and syntax for statements and expressions will be very familiar to any Python programmer. However, Starlark is intended not for writing applications but for expressing configuration.
+
+* WORKSPACE
+- *Ruleset*: An extension for Bazel.
+.code samples/hw-bazel-workspace
+
+* go/BUILD.bazel
+- *Rule*: A function implementation. It takes an input and produces an output.
+- *Target*: A buildable unit.
+.code samples/hw-bazel-build
+
+* Build & run
+.code samples/hw-bazel-run-tree
+
+* Demo: Microservices, Kubernetes and Tilt
+.image img/plan.png 350 700
+- build two gRPC services
+- build Docker images for the services, and for Evnoy proxy
+- deploy all into local k8s cluster (minikube)
+.link https://ekhabarov.com/envoy
+
+* Labels
+
+.code samples/labels
+
+
+* Should we write BUILD files manually?
+
+Partially, thanks to Gazelle, which:
+
+- Generates BUILD files
+- Keeps them up to date
+- Formats BUILD files
+- Manages dependencies
+
+*Manually*added*targets*:
+
+- Container images
+- YAML manifests
+- Publishing artifacts
+
+* What else?
+
+* Bazel query
+Some questions that query answers:
+
+- What packages use package or tool _X_?
+- Which dependencies package _X_ has?
+- What files are generated _foo_ package?
+- What rule target(s) contain file _path/to/file.go_ as a source?
+- Where a transitive dependency came from?
+
+.link https://docs.bazel.build/versions/main/query-how-to.html Bazel Query How-To
+
+* Dependency graph
+
+.image img/graph.png 400 500
+
+.code samples/vis
+
+* Extensibility
+
+- *Ruleset*: An extension for Bazel.
+
+Available rules:
+
+- rules_go
+- rules_oci
+- rules_proto
+- rules_ytt
+- rules_erlang
+- rules_haskell
+- rules_kotlin
+- etc.
+
+.link https://awesomebazel.com
+
+
+* More info on Bazel
+.link https://bazel.build
+.link https://awesomebazel.com

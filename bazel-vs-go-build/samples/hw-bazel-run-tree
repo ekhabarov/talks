@@ -1,0 +1,8 @@
+bazel run //go:hello-world                                => runs hello-world binary
+  |
+  |--> bazel build //go:hello-world                       => creates hello-world binary
+        |
+        |--> bazel build //go:hello-world_lib             => creates hello-world.a
+              |
+              |--> bazel build //go:generate_hello_go     => creates hello.go
+

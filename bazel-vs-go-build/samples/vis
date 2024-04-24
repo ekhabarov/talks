@@ -1,0 +1,2 @@
+$ bazel query --noimplicit_deps 'deps(//:image)' --output graph | grep -v ... > graph.in
+$ dot -Tpng < graph.in > graph.png

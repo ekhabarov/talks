@@ -1,0 +1,21 @@
+Common format // HL
+% bazel (build | test | run) //path/to/package:target
+
+Build everything in a workspace // HL
+% bazel build //...
+or
+% bazel build //:all
+
+Build everything in package "abc" recursively // HL
+% bazel build //abc/...
+or
+% bazel build //abc/:all
+
+Build external dependency // HL
+% bazel build @hw_generator//...
+
+Build one target // HL
+% bazel build //go:hello-world
+
+Run one target // HL
+% bazel run //go:hello-world
