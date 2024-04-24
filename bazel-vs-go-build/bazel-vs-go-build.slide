@@ -45,8 +45,7 @@ https://ekhabarov.com
 - *Target*machine* is a machine we build software for
 - Environment variables
 
-
-*
+* We've built binaries...
 .image img/binaries.jpg 500 1000
 
 * Publishing
