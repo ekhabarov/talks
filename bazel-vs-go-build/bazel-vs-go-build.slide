@@ -1,16 +1,24 @@
 When "go build" isn't enough: Introduction to Bazel
-Apr 25, 2024
+Jan 14, 2026
 
 Eugene Khabarov
-Lead Developer, Arctic Wolf
-Ottawa, ON, Canada
 
 https://ekhabarov.com
+
+* Who Am I
+- Microsoft SQL Server database developer, +Delphi, C#, Java (2005-20015)
+- Go developer (since 2016)
+- +Build guy/DevOps (since 2020-2021)
+- Not a Google fan, but I mostly use: Go, Bazel, gRPC, Protobuf, and K8s
+- Moved to Austin two weeks ago from Ottawa, Canada
+
+.image img/gopher.jpeg 275 250
+.caption Gopher from GoCon Canada 2019
 
 * Agenda
 - Build process
 - Dependencies
-- Bazel
+- Building a "magic button" with Bazel
 
 * Build and dependencies
 
@@ -24,11 +32,13 @@ https://ekhabarov.com
 
 * Do we have all of the *.go files from the beginning?
 - // go:generate _<some_arbitrary_binary_or_script_here>_
-- make generate
-- generate.sh
+- make <something>
+- shell scripts
 - etc.
 
 .image img/build-generator.jpg 300 850
+
+[[https://go.googlesource.com/proposal/+/refs/heads/master/design/go-generate.md][go:generate Proposal]]
 
 * Dependencies: part I
 - Go packages
@@ -77,10 +87,8 @@ https://ekhabarov.com
 
 * What else should we consider during the build process?
 - Is our build reproducible?
-- Is our build well isolated/hermetic*? (Hello Docker!).
+- Is our build well isolated/hermetic? (Hello Docker!).
 - When build fails, can we restart from the failure point but not from the beginning?
-
- * more on this later
 
 * The output of the build process aka artifacts
 - Go binaries
@@ -144,9 +152,7 @@ Compilers and other tools during the build have an access to explicitly defined 
 .link https://bazel.build/docs/sandboxing
 .link https://bazel.build/basics/hermeticity
 
-* It's demo time!
-.image img/shutup.jpg
-
+* Let's look at the code
 
 * Hello world generator (main.go)
 .code samples/hello-world.go
@@ -166,20 +172,23 @@ Compilers and other tools during the build have an access to explicitly defined 
 
 * Hello world generator: Bazelified
 
-- *WORKSPACE*: defines a project root *//* and may contain external dependencies.
-- *BUILD.bazel*: defines a package like *//* or *//go*. Declares zero or more build targets for the package. In most of the cases Bazel package structure is the same as directory structure.
+- *MODULE.bazel* or *WORKSPACE* _(deprecated)_ : defines a project root *//* and may contain external dependencies.
+- *BUILD.bazel*: defines a package like *//* or *//go*. Declares zero or more build targets for the package.
 
 .code samples/hw-bazel-tree
+
+  there is no *.go files in here
 
 .link https://github.com/ekhabarov/blog-code-snippets/tree/master/how-to-bazel/genereate-and-compile-go-code Github Repo
 .link https://ekhabarov.com/post/how-to-generate-code-with-bazel/ Blog post
 
-* Starlark
-Starlark syntax is a strict subset of Python and Starlark semantics is almost a subset of that language. In particular, its data types and syntax for statements and expressions will be very familiar to any Python programmer. However, Starlark is intended not for writing applications but for expressing configuration.
-
-* WORKSPACE
-- *Ruleset*: An extension for Bazel.
+* WORKSPACE (deprecated)
 .code samples/hw-bazel-workspace
+
+* MODULE.bazel
+.code samples/hw-bazel-module
+
+- `bazel_dep` pulls modules from Bazel Central Registry https://bcr.bazel.build
 
 * go/BUILD.bazel
 - *Rule*: A function implementation. It takes an input and produces an output.
@@ -242,17 +251,26 @@ Some questions that query answers:
 Available rules:
 
 - rules_go
+- gazelle
 - rules_oci
 - rules_proto
 - rules_ytt
-- rules_erlang
-- rules_haskell
-- rules_kotlin
 - etc.
 
-.link https://awesomebazel.com
-
-
-* More info on Bazel
 .link https://bazel.build
+.link https://bcr.bazel.build
 .link https://awesomebazel.com
+
+* When to use Bazel
+
+- With relatively large (mono)repos
+- Many languages
+- Multi-step build process
+- Bazel solves more issues than it creates
+- Hermeticity and reproducibility are mandatory
+- Build takes a lot of time
+
+
+* Just one more thing
+
+.image img/colombo.jpg

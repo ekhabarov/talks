@@ -1,5 +1,6 @@
 .
 ├── BUILD.bazel // HL
-├── WORKSPACE // HL
-└── go
-    └── BUILD.bazel // HL
+├── MODULE.bazel // HL
+├── go
+│   └── BUILD.bazel // HL
+└── go.mod

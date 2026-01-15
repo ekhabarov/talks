@@ -15,7 +15,7 @@ go_register_toolchains(version = "1.20.3") # Go version // HL
 load("@bazel_gazelle//:deps.bzl", "go_repository")
 
 go_repository(
-    name = "hw_generator",
+    name = "hw_generator", // HL
     importpath = "github.com/ekhabarov/helloworld-generator",
     sum = "h1:MrREQgX6I0/4cstUhbuqfALzUF3W2Nz8kVZRq6A4q+E=",
     version = "v0.0.1",
